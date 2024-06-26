@@ -1,5 +1,10 @@
 package com.example.eventcalendar;
 
+import android.annotation.SuppressLint;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class Event {
     private String name;
     private long timeInMillis;
@@ -15,6 +20,15 @@ public class Event {
 
     public long getTimeInMillis() {
         return timeInMillis;
+    }
+
+    public String parseTimeInMillisToDateTimeFormat() {
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        return sdf.format(new Date(timeInMillis));
+    }
+
+    public String getFullName() {
+        return parseTimeInMillisToDateTimeFormat() + "\n" + name;
     }
 
     @Override

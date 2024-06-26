@@ -34,7 +34,14 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, @SuppressLint("RecyclerView") int position) {
         Event event = eventList.get(position);
-        holder.tvEventName.setText(event.getName());
+        holder.tvEventName.setText(event.getFullName());
+
+        if (isHoliday(event)) {
+            holder.tvEventName.setTextColor(context.getResources().getColor(R.color.red, null));
+        } else {
+            holder.tvEventName.setTextColor(context.getResources().getColor(R.color.black, null));
+        }
+
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -44,9 +51,13 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     }
 
     private void showEditDeleteDialog(Event event, int position) {
+        if (isHoliday(event)) {
+            return;
+        }
+
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("Edit or Delete Event")
-                .setMessage("Do you want to edit or delete this event?")
+                .setMessage("Do you want to edit or delete event? \n" + event.getFullName())
                 .setPositiveButton("Edit", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -74,10 +85,25 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 eventList.set(position, newEvent);
                 notifyDataSetChanged();
                 ((MainActivity) context).saveEvents(((MainActivity) context).selectedDate, eventList);
-//                ((MainActivity) context).scheduleNotification(newEvent);
+                ((MainActivity) context).scheduleNotification(newEvent);
             }
         }, event);
         dialog.show();
+    }
+
+    private boolean isHoliday(Event event) {
+        for (Event holiday : MainActivity.holidays) {
+            if (holiday.getName().equals(event.getName()) && holiday.getTimeInMillis() == event.getTimeInMillis()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void updateEventList(List<Event> filteredEvents) {
+        this.eventList = filteredEvents;
+        notifyDataSetChanged();
     }
 
     @Override
