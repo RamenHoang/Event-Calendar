@@ -28,15 +28,25 @@ import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
+    // Bien luu tru thong tin cua lich
     private CalendarView calendarView;
+    // Bien lien ket voi button Add Event
     private Button btnAddEvent;
+    // Bien lien ket voi RecyclerView
     private RecyclerView recyclerView;
+    // Bien luu tru danh sach cac su kien
     private EventAdapter eventAdapter;
+    // Bien luu tru danh sach cac su kien ma nguoi dung them vao
     private List<Event> eventList = new ArrayList<>();
+    // Bien luu tru tat ca su kien, bao gom su kien cua nguoi dung va cac ngay le viet nam
     private List<Event> allEvents = new ArrayList<>();
-    String selectedDate;
+    // Bien luu ngay duoc tron tren lich
+    static String selectedDate;
+    // Bien kho luu tru thong tin ung dung
     private SharedPreferences sharedPreferences;
+    // Bien luu tru ngay le viet nam
     static final List<Event> holidays = new ArrayList<>();
+    // Bien lien ket voi SearchView
     private SearchView searchView;
 
     static {
@@ -52,45 +62,60 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Khoi tao phan core ung dung
         super.onCreate(savedInstanceState);
+        
+        // Hien thi giao dien cua ung dung
         setContentView(R.layout.activity_main);
 
+        // Lien ket cac bien voi cac view tuong ung
         calendarView = findViewById(R.id.calendarView);
         btnAddEvent = findViewById(R.id.btnAddEvent);
         recyclerView = findViewById(R.id.recyclerView);
         searchView = findViewById(R.id.searchView);
 
+        // Khoi tao kho luu tru
         sharedPreferences = getSharedPreferences("EventPref", MODE_PRIVATE);
 
+        // Xu ly hien thi holidays, events theo ngay duoc chon
         calendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
             @Override
             public void onSelectedDayChange(@NonNull CalendarView view, int year, int month, int dayOfMonth) {
-                selectedDate = year + "-" + (month + 1) + "-" + dayOfMonth;
+                selectedDate = year + "-" + (month + 1) + "-" + dayOfMonth; // 2024-06-27
+                
+                // Tai events cua ngay duoc chon 
                 loadEvents(selectedDate);
             }
         });
 
+        // Xy ly khi nhan nut Add Event
         btnAddEvent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Hien thi dialog add event
                 showAddEventDialog();
             }
         });
 
+        // Khoi tao RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         eventAdapter = new EventAdapter(eventList, this);
         recyclerView.setAdapter(eventAdapter);
 
+        // Tu dong chon ngay hien tai, va hien thi event cua ngay hien tai
         selectedDate = getCurrentDate();
         loadEvents(selectedDate);
 
+        // Xu ly tim kiem su kien
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            // Tim kien khi nhan nut tim tren ban phim
             @Override
             public boolean onQueryTextSubmit(String query) {
                 searchEvents(query);
                 return true;
             }
 
+            // Tim kiem khi thay doi noi dung tren thanh tim kiem
             @Override
             public boolean onQueryTextChange(String newText) {
                 searchEvents(newText);
@@ -98,15 +123,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Xu ly khi dong thanh tim kiem
         searchView.setOnCloseListener(new SearchView.OnCloseListener() {
             @Override
             public boolean onClose() {
+                // Hien thi events cua ngay duoc chon truoc do
                 loadEvents(selectedDate);
                 eventAdapter.updateEventList(eventList);
                 return false;
             }
         });
 
+        // Tai tat ca events
         loadAllEvents();
     }
 
@@ -130,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showAddEventDialog() {
+        // Hien thi dialog them, sua event
         AddEventDialog dialog = new AddEventDialog(this, new AddEventDialog.AddEventDialogListener() {
             @SuppressLint("NotifyDataSetChanged")
             @Override
@@ -149,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
         eventList.clear();
 
         // Load holidays
+        // Tim trong danh sach holidays, ngay nao trung voi ngay duoc chon, se them vao eventList
         for (Event holiday : holidays) {
             if (isSameDay(holiday.getTimeInMillis(), date)) {
                 eventList.add(holiday);
@@ -156,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Load user events
+        // Lay tu kho du lieu, neu ngay nao trung voi ngay duoc chon, se them vao eventList
         Set<String> events = sharedPreferences.getStringSet(date, new HashSet<>());
         for (String eventStr : events) {
             Event event = Event.fromString(eventStr);
@@ -163,6 +194,8 @@ public class MainActivity extends AppCompatActivity {
                 eventList.add(event);
             }
         }
+        
+        // Thong bao toi eventAdapter, cap nhat du lieu moi tu eventList ra view
         eventAdapter.notifyDataSetChanged();
     }
 
@@ -181,13 +214,16 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("ScheduleExactAlarm")
     void scheduleNotification(Event event) {
+        // Tao intent de gui thong bao
         Intent intent = new Intent(this, NotificationReceiver.class);
         intent.putExtra(NOTIFICATION, event.getName());
         long notificationId = System.currentTimeMillis();
         intent.putExtra(NOTIFICATION_ID, notificationId);
 
+        // Tao pendingIntent de gui thong bao
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, (int) notificationId, intent, PendingIntent.FLAG_IMMUTABLE);
 
+        // Tao alarmManager de gui thong bao
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(event.getTimeInMillis());
@@ -195,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
         long minutes = calendar.getTimeInMillis() / 1000 / 60;
         long minutesInMilli = minutes * 60 * 1000;
 
+        // Gui thong bao vao thoi diem event xay ra
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, minutesInMilli, pendingIntent);
     }
 
@@ -216,13 +253,21 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    // Method tim kiem event
     private void searchEvents(String query) {
+        // Khoi tao danh dach event duoc tim kiem
         List<Event> filteredEvents = new ArrayList<>();
+
+        // Tim kiem trong allEvents
         for (Event event : allEvents) {
+            // Neu ten event co chua noi dung tim kiem
             if (event.getName().toLowerCase().contains(query.toLowerCase())) {
+                // Them vao danh sach event duoc tim kiem
                 filteredEvents.add(event);
             }
         }
+
+        // Ra lenh cho eventAdapter cap nhat thong tren view
         eventAdapter.updateEventList(filteredEvents);
     }
 
