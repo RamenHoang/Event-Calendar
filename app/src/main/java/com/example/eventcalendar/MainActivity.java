@@ -1,5 +1,8 @@
 package com.example.eventcalendar;
 
+import static com.example.eventcalendar.NotificationReceiver.NOTIFICATION;
+import static com.example.eventcalendar.NotificationReceiver.NOTIFICATION_ID;
+
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -37,9 +40,13 @@ public class MainActivity extends AppCompatActivity {
     private SearchView searchView;
 
     static {
-        holidays.add(new Event("New Year's Day", getDateInMillis(6, 26)));
-        holidays.add(new Event("Independence Day", getDateInMillis(4, 7)));
-        holidays.add(new Event("Christmas Day", getDateInMillis(12, 25)));
+        holidays.add(new Event("Tết dương lịch", getDateInMillis(1, 1)));
+        holidays.add(new Event("Quốc tế phụ nữ", getDateInMillis(3, 8)));
+        holidays.add(new Event("Giải phóng miền nam, thống nhất đất nước", getDateInMillis(4, 30)));
+        holidays.add(new Event("Quốc tế lao động", getDateInMillis(5, 1)));
+        holidays.add(new Event("Quốc khánh", getDateInMillis(9, 2)));
+        holidays.add(new Event("Ngày phụ nữ việt nam", getDateInMillis(10, 20)));
+        holidays.add(new Event("Ngày nhà giáo việt nam", getDateInMillis(11, 20)));
         // Add other holidays here
     }
 
@@ -175,23 +182,29 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("ScheduleExactAlarm")
     void scheduleNotification(Event event) {
         Intent intent = new Intent(this, NotificationReceiver.class);
-        intent.putExtra("eventName", event.getName());
+        intent.putExtra(NOTIFICATION, event.getName());
+        long notificationId = System.currentTimeMillis();
+        intent.putExtra(NOTIFICATION_ID, notificationId);
 
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, (int) notificationId, intent, PendingIntent.FLAG_IMMUTABLE);
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(event.getTimeInMillis());
 
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+        long minutes = calendar.getTimeInMillis() / 1000 / 60;
+        long minutesInMilli = minutes * 60 * 1000;
+
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, minutesInMilli, pendingIntent);
     }
 
     private boolean isSameDay(long timeInMillis, String date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(timeInMillis);
 
-        String eventDate = calendar.get(Calendar.YEAR) + "-" + (calendar.get(Calendar.MONTH) + 1) + "-" + calendar.get(Calendar.DAY_OF_MONTH);
-        return eventDate.equals(date);
+        String eventDate = (calendar.get(Calendar.MONTH) + 1) + "-" + calendar.get(Calendar.DAY_OF_MONTH);
+        String currentDate = date.substring(date.indexOf("-") + 1);
+        return eventDate.equals(currentDate);
     }
 
     private boolean isHoliday(Event event) {
